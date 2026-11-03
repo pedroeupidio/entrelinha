@@ -1,152 +1,553 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Novo Jogo • Sala</title>
-<style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f5ff;background:#151425}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:20px}.panel{width:min(100%,460px);background:#222039;border:1px solid #393552;border-radius:24px;padding:26px;box-shadow:0 22px 65px #08071166}h1{font-size:27px;margin:0 0 8px;text-align:center}p{color:#bbb6d1;text-align:center;margin:0 0 25px;font-size:14px}label{display:block;font-size:13px;font-weight:700;margin:17px 0 9px}input{width:100%;background:#302d48;color:white;border:1px solid #48435e;border-radius:12px;padding:14px;font-size:16px;outline:none}input:focus{border-color:#a38cff}.positions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.pos{border:1px solid #4b4566;border-radius:12px;background:#302d48;color:white;padding:13px 0;font-size:17px;cursor:pointer}.pos.selected{background:#8268ed;border-color:#b2a1ff}.pos:disabled{opacity:.32;cursor:not-allowed}.primary,.secondary{width:100%;border:0;border-radius:12px;padding:15px;margin-top:20px;font-weight:700;font-size:15px;cursor:pointer}.primary{background:#8268ed;color:white}.secondary{background:transparent;border:1px solid #514b69;color:#c9c3dd;margin-top:12px}.primary:disabled{opacity:.5;cursor:not-allowed}.notice{min-height:20px;color:#ffb3b3;text-align:center;font-size:13px;margin-top:14px}.hidden{display:none}.players{display:grid;gap:9px;margin-top:18px}.player{display:flex;align-items:center;gap:12px;background:#302d48;padding:12px;border-radius:12px}.number{display:grid;place-items:center;background:#8065df;border-radius:10px;width:36px;height:36px;font-weight:800}.me{margin-left:auto;color:#c1b1ff;font-size:12px}.status{font-size:13px;color:#a8f0c4;text-align:center}.muted{color:#b9b2d0;font-size:12px;text-align:center;margin-top:16px}.row{display:flex;gap:10px}.row button{flex:1}.danger{color:#ffb9bf}.spinner{opacity:.6}
-</style>
-</head>
-<body>
-<main class="panel">
-<section id="entry">
-<h1>🎲 Novo jogo</h1><p>Escolha seu lugar e entre na sala.</p>
-<label for="name">Seu nome</label><input id="name" maxlength="24" placeholder="Como devemos te chamar?" autocomplete="nickname">
-<label>Sua posição na mesa</label><div class="positions" id="positions"></div>
-<button class="primary" id="join">Conectar à sala</button>
-<button class="secondary danger" id="resetEntry">↻ Reiniciar sala</button>
-<div class="notice" id="entryNotice" role="status"></div>
-</section>
-<section id="lobby" class="hidden">
-<h1>✨ Sala de espera</h1><p>Todos conectados aparecem aqui automaticamente.</p>
-<div class="status" id="connectionStatus">● Conectado</div><div class="players" id="players"></div>
-<div class="muted" id="count"></div>
-<button class="secondary" id="leave">Sair da sala</button>
-<button class="secondary danger" id="resetLobby">↻ Reiniciar sala</button>
-<div class="notice" id="lobbyNotice" role="status"></div>
-</section>
-</main>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Entrelinha</title><style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f9f7ff;background:#171425}*{box-sizing:border-box}body{margin:0;padding:14px;min-height:100dvh}main{max-width:760px;margin:auto}.hide{display:none!important}h1{margin:8px 0;font-size:29px}h2{font-size:19px;margin:8px 0}.muted{color:#bcb5d2;font-size:13px}.panel{background:#27223c;border:1px solid #453a61;border-radius:18px;padding:18px;margin:12px 0}.stack{display:grid;gap:10px}input{width:100%;background:#38314e;color:white;border:1px solid #655a81;border-radius:12px;padding:13px;font-size:16px}button{cursor:pointer;border:0;border-radius:11px;padding:12px 14px;background:#8a69e9;color:white;font-weight:750;font-size:14px}button:disabled{opacity:.42;cursor:not-allowed}.ghost{background:#413755}.danger{background:#67344b}.positions{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.positions button{background:#413755}.positions button.active{background:#8a69e9}.positions button:disabled{opacity:.25}.flex{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.spread{justify-content:space-between}.players{display:grid;gap:8px}.player{display:flex;align-items:center;gap:9px;background:#352e4a;border-radius:10px;padding:9px}.dot{height:15px;width:15px;border-radius:50%;flex-shrink:0}.score{margin-left:auto;font-weight:800}.notice{color:#ffb9c2;min-height:18px;font-size:13px;margin-top:8px}.board{position:relative;width:100%;height:min(49vh,410px);min-height:275px;background:white;border:4px solid #e7e1f5;border-radius:13px;overflow:hidden;touch-action:none}.secret{position:absolute;top:0;bottom:0;width:3px;background:#ef476f;z-index:1;pointer-events:none}.curtain{position:absolute;inset:0;background:#7850c5;z-index:2;transition:transform 1.35s cubic-bezier(.3,.8,.25,1);pointer-events:none}.board.revealed .curtain{transform:translateY(-102%)}.token{position:absolute;height:8%;border-radius:6px;border:2px solid #ffffffaa;display:grid;place-items:center;color:#151122;font-size:13px;font-weight:900;box-shadow:0 2px 7px #0004;z-index:3;touch-action:none;user-select:none}.token.mine{outline:2px solid white;cursor:grab}.ruler{height:30px;background:#f6f2fc;border-radius:0 0 9px 9px;display:flex;justify-content:space-between;padding:0 5px;align-items:start;color:#49376c;font-size:11px}.tick{height:12px;border-left:1px solid #6d5e82;position:relative}.tick.major{height:20px;border-left-width:2px}.tick span{position:absolute;top:15px;left:0;transform:translateX(-50%)}.topic{background:#fff;color:#261b37;border-radius:16px;padding:17px;margin-top:14px}.topic h2{font-size:23px;margin:5px 0 13px}.level{display:flex;gap:10px;align-items:start;border-top:1px solid #e8e2ef;padding:8px 0;font-size:13px}.level b{background:#eae1fa;color:#6c4da6;border-radius:7px;padding:5px 9px}.choices{display:flex;justify-content:center;align-items:center;gap:9px;margin:12px auto;width:50%;min-width:240px}.choice{padding:12px 0;color:#20152c;background:#f5c45e}.choice[data-points="1"]{width:50%}.choice[data-points="2"]{width:30%;background:#6fd9bb}.choice[data-points="3"]{width:20%;background:#f48fa6}.choice.selected{outline:3px solid white;outline-offset:2px}.center{text-align:center}.pill{border-radius:999px;padding:5px 10px;background:#403452;font-size:12px}.topline{display:flex;justify-content:space-between;align-items:center}.result{font-size:13px;padding:7px 0;border-bottom:1px solid #50435f}.sub{font-size:12px;color:#cabee2}.banner{background:#413458;border-radius:12px;padding:12px;margin:10px 0}#boardWrap{margin-top:12px}#gameButtons{margin:14px 0}.small{font-size:12px}.configHint{color:#ffc77b}
+</style></head><body><main><div class="topline"><h1>〰 Entrelinha</h1><span id="connection" class="pill">Conectando…</span></div><section id="entry" class="panel stack"><h2>Entrar na sala</h2><label>Seu nome<input id="name" maxlength="24" placeholder="Digite seu nome"></label><div class="muted">Sua posição na mesa</div><div id="positions" class="positions"></div><button id="join">Conectar</button><button id="resetEntry" class="danger">↻ Reiniciar sala travada</button><div id="entryMsg" class="notice"></div><p class="muted">Uma única sala privada entre amigos. Todos precisam abrir este mesmo site.</p></section><section id="lobby" class="hide"><div class="panel"><h2>Sala de espera</h2><div id="lobbyPlayers" class="players"></div><p class="muted">A partida começa quando houver pelo menos 2 jogadores.</p><button id="start">Iniciar partida</button><button id="leave" class="ghost">Sair</button><button id="resetLobby" class="danger">Reiniciar sala</button><div id="lobbyMsg" class="notice"></div></div></section><section id="game" class="hide"><div class="panel"><div class="flex spread"><b id="round"></b><span id="stage" class="pill"></span></div><div id="turnInfo" class="banner"></div><div id="scoreboard" class="players"></div></div><div id="boardWrap"><div id="board" class="board"><div id="secret" class="secret hide"></div><div id="curtain" class="curtain"></div><div id="tokens"></div></div><div id="ruler" class="ruler"></div></div><div id="topic" class="topic"><div class="sub">TEMA SORTEADO</div><h2 id="topicTitle"></h2><div id="levels"></div></div><div id="choicesArea" class="hide"><p class="center muted">Escolha uma ficha e arraste-a horizontalmente no quadro roxo</p><div class="choices"><button class="choice" data-points="1">1</button><button class="choice" data-points="2">2</button><button class="choice" data-points="3">3</button></div></div><div id="gameButtons" class="stack"><button id="action"></button><button id="next" class="hide">Próxima rodada</button><button id="restart" class="danger">Reiniciar partida e sala</button><div id="gameMsg" class="notice"></div></div><div id="results" class="panel hide"></div></section></main>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import {getAuth,signInAnonymously,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import {getDatabase,ref,onValue,runTransaction,onDisconnect,remove,get,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
-
-
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyAndJSnUDDiDoo19zLXFK-esNa9ZNOBTXM",
-    authDomain: "entrelinha-b2f67.firebaseapp.com",
-    projectId: "entrelinha-b2f67",
-    storageBucket: "entrelinha-b2f67.firebasestorage.app",
-    messagingSenderId: "516751278185",
-    appId: "1:516751278185:web:bb35c9f21b4e0cdc5a22f8"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
-
-const MAX_PLAYERS=12;
-const ROOM='salas/sala-principal';
-const $=id=>document.getElementById(id);
-let db,auth,uid=null,chosen=null,session=null,playerKey=null,connected=false,busy=false,roomData=null;
-const token=()=>crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-const notice=(message,lobby=false)=>$(lobby?'lobbyNotice':'entryNotice').textContent=message;
-const setBusy=v=>{busy=v;$('join').disabled=v;$('resetEntry').disabled=v;$('resetLobby').disabled=v;$('leave').disabled=v;};
-function renderPositions(){
-  const occupied=new Set(Object.values(roomData?.players||{}).map(p=>Number(p.position)));
-  $('positions').replaceChildren();
-  for(let i=1;i<=MAX_PLAYERS;i++){
-    const b=document.createElement('button');b.type='button';b.className='pos'+(chosen===i?' selected':'');b.textContent=i;
-    b.disabled=busy||occupied.has(i)&&!(session===roomData?.epoch&&playerKey&&roomData?.players?.[playerKey]?.position===i);
-    b.onclick=()=>{chosen=i;renderPositions();};$('positions').append(b);
+import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import {getDatabase,ref,onValue,runTransaction,onDisconnect,remove,get} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
+// SUBSTITUA pelas configurações do SEU projeto Firebase (inclusive databaseURL).
+const firebaseConfig={apiKey:'AIzaSyAndJSnUDDiDoo19zLXFK-esNa9ZNOBTXM',authDomain:'entrelinha-b2f67.firebaseapp.com',databaseURL:'https://entrelinha-b2f67-default-rtdb.firebaseio.com',projectId:'entrelinha-b2f67',storageBucket:'entrelinha-b2f67.firebasestorage.app',messagingSenderId:'516751278185',appId:'1:516751278185:web:bb35c9f21b4e0cdc5a22f8'};
+const THEMES=[
+  {
+    "title": "Vício em Esportes",
+    "levels": [
+      "Prefiro assistir à TV Senado",
+      "Só corro se tiver alguém me perseguindo",
+      "Assisto aos jogos do meu time se estiver passando",
+      "Organizo minha vida em função dos campeonatos",
+      "Poderia apostar em um campeonato de cuspe em distância"
+    ]
+  },
+  {
+    "title": "Ciúmes",
+    "levels": [
+      "Se quiser, pode até viajar com o ex",
+      "Confio, mas reparo em algumas coisas",
+      "Uma curtida suspeita já me deixa pensativo",
+      "Investigo seguidores como se fosse da Polícia Federal",
+      "Tenho ciúmes até dos personagens dos sonhos"
+    ]
+  },
+  {
+    "title": "Preguiça",
+    "levels": [
+      "Acordo cedo até nas férias",
+      "Descanso depois de cumprir minhas obrigações",
+      "Se puder resolver deitado, melhor",
+      "Já adiei uma refeição para não levantar",
+      "Espero a sede passar para não precisar buscar água"
+    ]
+  },
+  {
+    "title": "Talento para Mentir",
+    "levels": [
+      "Minha cara me entrega antes de abrir a boca",
+      "Consigo inventar uma desculpa convincente",
+      "Minto olhando nos olhos sem dificuldade",
+      "Sustento uma história falsa por anos",
+      "Se me deixarem falar, convenço até o detector de mentiras"
+    ]
+  },
+  {
+    "title": "Desespero por Dinheiro",
+    "levels": [
+      "Dinheiro não compra minha paz",
+      "Aceito uns trabalhos extras se valer a pena",
+      "Por um bom Pix, considero propostas estranhas",
+      "Venderia minha dignidade, mas parcelado não",
+      "Por um milhão, deixo escolherem até meu nome"
+    ]
+  },
+  {
+    "title": "Vergonha em Público",
+    "levels": [
+      "Faço karaokê sóbrio na frente de desconhecidos",
+      "Converso tranquilamente com qualquer pessoa",
+      "Ensaiaria três vezes antes de pedir informação",
+      "Fico vermelho quando cantam parabéns para mim",
+      "Se tropeço na rua, considero mudar de cidade"
+    ]
+  },
+  {
+    "title": "Gosto por Fofoca",
+    "levels": [
+      "Nem quero saber o que aconteceu",
+      "Escuto se alguém vier me contar",
+      "Pergunto detalhes, mas guardo segredo",
+      "Investigo a história e cruzo depoimentos",
+      "Descubro o divórcio antes do próprio casal"
+    ]
+  },
+  {
+    "title": "Romantismo",
+    "levels": [
+      "Meu maior gesto de amor é responder mensagem",
+      "Lembro de datas importantes, às vezes",
+      "Faço surpresas e demonstro carinho",
+      "Escrevo declarações dignas de novela",
+      "Me apaixono e já escolho o nome dos nossos netos"
+    ]
+  },
+  {
+    "title": "Competitividade",
+    "levels": [
+      "Perder faz parte, nem me importo",
+      "Gosto de ganhar, mas levo na esportiva",
+      "Fico irritado quando perco por pouco",
+      "Exijo revanche até ganhar",
+      "Contesto até resultado de pedra, papel e tesoura"
+    ]
+  },
+  {
+    "title": "Coragem para Flertar",
+    "levels": [
+      "Só flerto por telepatia",
+      "Curto um story e espero um milagre",
+      "Puxo assunto se perceber algum interesse",
+      "Chego em alguém sem precisar de incentivo",
+      "Consigo transformar uma fila de cartório em aplicativo de namoro"
+    ]
+  },
+  {
+    "title": "Dependência do Celular",
+    "levels": [
+      "Esqueço que tenho celular",
+      "Uso só quando realmente preciso",
+      "Olho as notificações a cada dez minutos",
+      "Entro no banho pensando nas mensagens que perdi",
+      "Se ficar sem internet, começo a apresentar sintomas de abstinência"
+    ]
+  },
+  {
+    "title": "Habilidade na Cozinha",
+    "levels": [
+      "Já consegui queimar água",
+      "Se tiver miojo, ninguém passa fome",
+      "Faço um almoço decente sem receita",
+      "Improviso pratos que parecem de restaurante",
+      "O MasterChef teria que criar uma categoria só para mim"
+    ]
+  },
+  {
+    "title": "Medo de Filme de Terror",
+    "levels": [
+      "Assisto sozinho, no escuro e ainda dou risada",
+      "Levo uns sustos, mas durmo normalmente",
+      "Depois do filme, acendo algumas luzes",
+      "Durmo coberto até a cabeça e evito espelhos",
+      "Se ouvir um barulho, entrego a casa para o demônio"
+    ]
+  },
+  {
+    "title": "Disposição para Festas",
+    "levels": [
+      "Às nove da noite já estou de pijama",
+      "Vou se for aniversário de alguém importante",
+      "Saio animado, mas volto antes do amanhecer",
+      "Sou o último a sair e ainda procuro um after",
+      "Saio na sexta e só descubro que é segunda quando toca o despertador"
+    ]
+  },
+  {
+    "title": "Paciência com Pessoas Burras",
+    "levels": [
+      "Explico quantas vezes forem necessárias",
+      "Repito a explicação com um sorriso forçado",
+      "Na terceira pergunta, minha alma já saiu do corpo",
+      "Começo a questionar a evolução humana",
+      "Prefiro ensinar cálculo a uma porta"
+    ]
+  },
+  {
+    "title": "Coragem para Gastar Dinheiro",
+    "levels": [
+      "Pesquiso três meses antes de comprar uma meia",
+      "Compro só quando tenho certeza de que preciso",
+      "Me permito alguns luxos sem culpa",
+      "Parcelo coisas que nem sabia que queria",
+      "Meu cartão de crédito deveria ter um responsável legal"
+    ]
+  },
+  {
+    "title": "Talento para Dançar",
+    "levels": [
+      "Tenho a mobilidade de uma geladeira",
+      "Balanço a cabeça e considero isso dança",
+      "Me viro bem quando toca uma música conhecida",
+      "Viro atração principal quando começa a festa",
+      "Se tocar música no velório, faço coreografia"
+    ]
+  },
+  {
+    "title": "Capacidade de Guardar Segredos",
+    "levels": [
+      "Se me contar, amanhã vira notícia",
+      "Tento guardar, mas dou umas indiretas",
+      "Guardo segredos normais sem dificuldade",
+      "Levaria uma informação comprometedora para o túmulo",
+      "Nem sob tortura revelaria a senha do Wi-Fi de um amigo"
+    ]
+  },
+  {
+    "title": "Nível de Dramaticidade",
+    "levels": [
+      "Resolvo problemas sem fazer alarde",
+      "Reclamo um pouco e sigo a vida",
+      "Uma pequena inconveniência já estraga meu humor",
+      "Transformo qualquer discussão em final de novela",
+      "Se o pedido vier sem batata, faço um discurso de despedida"
+    ]
+  },
+  {
+    "title": "Disposição para Fazer Besteira",
+    "levels": [
+      "Sou a voz da razão do grupo",
+      "Às vezes topo uma ideia meio duvidosa",
+      "Se todo mundo for, eu vou",
+      "Geralmente sou quem propõe a ideia ruim",
+      "Sou o motivo pelo qual o grupo precisa de um advogado"
+    ]
+  },
+  {
+    "title": "Nível de Maldade",
+    "levels": [
+      "Peço desculpas até quando pisam no meu pé",
+      "Sinto culpa por matar um mosquito",
+      "Dou risada quando alguém tropeça sem se machucar",
+      "Planejo pequenas vinganças por pura satisfação",
+      "Se fosse vilão de filme, o público torceria contra mim"
+    ]
+  },
+  {
+    "title": "Desespero para Namorar",
+    "levels": [
+      "Se aparecer alguém interessado, finjo que morri",
+      "Estou bem sozinho, mas aberto a possibilidades",
+      "Baixei aplicativo de namoro por curiosidade",
+      "Já imagino casamento depois de três encontros",
+      "Se alguém me der bom-dia, começo a pesquisar alianças"
+    ]
+  },
+  {
+    "title": "Higiene Pessoal",
+    "levels": [
+      "Meu banho é um evento comemorativo anual",
+      "Tomo banho quando começo a desconfiar do cheiro",
+      "Mantenho uma rotina básica de higiene",
+      "Tenho produtos diferentes para cada parte do corpo",
+      "Se pudesse, esterilizava até o ar antes de respirar"
+    ]
+  },
+  {
+    "title": "Habilidade para Dirigir",
+    "levels": [
+      "Sou um perigo até no carrinho de supermercado",
+      "Consigo dirigir, mas estacionar é outra história",
+      "Dirijo tranquilamente no dia a dia",
+      "Faço baliza em qualquer vaga sem pensar duas vezes",
+      "Se a Fórmula 1 me chamar, só preciso escolher a equipe"
+    ]
+  },
+  {
+    "title": "Medo de Passar Vergonha",
+    "levels": [
+      "Se pagar mico, ainda peço para filmarem",
+      "Dou risada e sigo a vida",
+      "Lembro da vergonha por alguns dias",
+      "Repasso mentalmente cada detalhe por meses",
+      "Uma vergonha de 2014 ainda me impede de dormir"
+    ]
+  },
+  {
+    "title": "Tolerância ao Álcool",
+    "levels": [
+      "Cheiro uma cerveja e já fico tonto",
+      "Duas bebidas e começo a falar demais",
+      "Bebo socialmente e conheço meus limites",
+      "Depois de várias doses ainda estou organizando o rolê",
+      "Meu fígado já pediu transferência de corpo"
+    ]
+  },
+  {
+    "title": "Vontade de Ser Famoso",
+    "levels": [
+      "Prefiro ser confundido com um poste",
+      "Ser conhecido no meu bairro já está ótimo",
+      "Gostaria de ter alguns seguidores e reconhecimento",
+      "Me imagino dando entrevistas e autógrafos",
+      "Já tenho discurso pronto para quando cancelarem minha carreira"
+    ]
+  },
+  {
+    "title": "Capacidade de Perdoar",
+    "levels": [
+      "Perdoo antes mesmo de receber um pedido de desculpas",
+      "Fico chateado, mas logo deixo para lá",
+      "Perdoo, mas não esqueço tão facilmente",
+      "Guardo rancor e lembro de cada detalhe",
+      "Ainda planejo vingança contra quem roubou minha borracha na escola"
+    ]
+  },
+  {
+    "title": "Coragem para Comer Coisas Estranhas",
+    "levels": [
+      "Se tiver uma textura diferente, nem provo",
+      "Experimento algo novo se parecer apetitoso",
+      "Provo comidas exóticas por curiosidade",
+      "Aceito desafios culinários sem fazer perguntas",
+      "Se fritar e colocar limão, eu como até um chinelo"
+    ]
+  },
+  {
+    "title": "Nível de Carência",
+    "levels": [
+      "Posso passar semanas sem falar com ninguém",
+      "Gosto de companhia, mas valorizo meu espaço",
+      "Sinto falta quando meus amigos somem",
+      "Preciso de atenção e carinho constantemente",
+      "Se ninguém me responder em cinco minutos, faço boletim de desaparecimento"
+    ]
+  },
+  {
+    "title": "Disposição para Trair",
+    "levels": [
+      "Nem em sonho consigo trair alguém",
+      "Se estiver comprometido, nem considero outras opções",
+      "Posso sentir atração, mas não passo disso",
+      "Se ninguém fosse descobrir, a tentação seria grande",
+      "Meu histórico amoroso parece um episódio de Casos de Família"
+    ]
+  },
+  {
+    "title": "Nível de Safadeza",
+    "levels": [
+      "Fico constrangido até com beijo em novela",
+      "Entendo as indiretas, mas finjo inocência",
+      "Tenho meus pensamentos maliciosos de vez em quando",
+      "Transformo qualquer conversa em duplo sentido",
+      "Consigo encontrar malícia até no manual da geladeira"
+    ]
+  },
+  {
+    "title": "Vício em Redes Sociais",
+    "levels": [
+      "Nem sei qual é a rede social da moda",
+      "Entro só para ver algumas novidades",
+      "Passo um bom tempo rolando o feed",
+      "Se não postar, parece que o dia nem aconteceu",
+      "Minha vida real é só intervalo entre dois stories"
+    ]
+  },
+  {
+    "title": "Coragem para Enfrentar uma Briga",
+    "levels": [
+      "Peço desculpas até para quem me ameaça",
+      "Tento resolver tudo na conversa",
+      "Se precisar me defender, não fujo",
+      "Encaro uma discussão sem baixar a cabeça",
+      "Se alguém me olhar torto, já ouço música de entrada de UFC"
+    ]
+  },
+  {
+    "title": "Nível de Organização",
+    "levels": [
+      "Meu quarto é um sítio arqueológico",
+      "Sei onde estão minhas coisas no meio da bagunça",
+      "Mantenho tudo razoavelmente arrumado",
+      "Organizo até as gavetas por categoria",
+      "Se mexerem um objeto dois centímetros, eu percebo"
+    ]
+  },
+  {
+    "title": "Disposição para Trabalhar",
+    "levels": [
+      "Se trabalhar fosse crime, eu seria inocente",
+      "Faço o mínimo necessário para receber meu salário",
+      "Cumpro minhas responsabilidades sem reclamar muito",
+      "Gosto de produzir e estou sempre procurando algo para fazer",
+      "Se me deixarem, faço hora extra até no meu aniversário"
+    ]
+  },
+  {
+    "title": "Vontade de Ter Filhos",
+    "levels": [
+      "Prefiro criar uma coleção de pedras",
+      "Acho crianças legais quando são dos outros",
+      "Talvez queira ter filhos algum dia",
+      "Já imagino nomes e como seria minha família",
+      "Se pudesse, montava uma creche particular dentro de casa"
+    ]
+  },
+  {
+    "title": "Nível de Teimosia",
+    "levels": [
+      "Mudo de opinião com bons argumentos",
+      "Defendo minhas ideias, mas sei reconhecer erros",
+      "Preciso de bastante convencimento para mudar de ideia",
+      "Mesmo percebendo que estou errado, continuo discutindo",
+      "Se eu disser que a Terra é quadrada, começo a procurar os cantos"
+    ]
+  },
+  {
+    "title": "Disposição para Viajar",
+    "levels": [
+      "Meu destino favorito é minha própria cama",
+      "Viajo se alguém organizar tudo",
+      "Gosto de conhecer lugares novos nas férias",
+      "Aceito viagens inesperadas sem pensar muito",
+      "Se me oferecerem uma passagem, embarco até para Marte"
+    ]
+  },
+  {
+    "title": "Capacidade de Sobreviver Sozinho",
+    "levels": [
+      "Não sobrevivo um dia sem alguém me ajudando",
+      "Consigo me virar, mas passo alguns apertos",
+      "Sei cuidar de mim e resolver problemas básicos",
+      "Me adapto facilmente a situações difíceis",
+      "Me largam numa ilha deserta e volto com uma pousada funcionando"
+    ]
+  },
+  {
+    "title": "Preço da Sua Dignidade",
+    "levels": [
+      "Não passo vergonha nem por um milhão de reais",
+      "Por R$ 500, faço uma dancinha ridícula em público",
+      "Por R$ 100, posto uma foto constrangedora nas redes sociais",
+      "Por R$ 20, deixo meus amigos escolherem meu corte de cabelo",
+      "Por um Pix de R$ 5, já estou perguntando qual é o desafio"
+    ]
+  },
+  {
+    "title": "Medo de Ser Cancelado",
+    "levels": [
+      "Falo o que penso mesmo que o mundo me odeie",
+      "Tomo alguns cuidados com o que publico",
+      "Penso duas vezes antes de fazer uma piada polêmica",
+      "Reviso até mensagens antigas com medo de repercussão",
+      "Se vazarem meu grupo de amigos, preciso mudar de identidade"
+    ]
+  },
+  {
+    "title": "Nível de Ganância",
+    "levels": [
+      "Dividiria meu último centavo sem pensar",
+      "Gosto de dinheiro, mas sei compartilhar",
+      "Sempre tento sair ganhando um pouquinho",
+      "Se encontrar dez reais no chão, procuro mais vinte",
+      "Venderia ingresso para meu próprio velório"
+    ]
+  },
+  {
+    "title": "Disposição para Quebrar Regras",
+    "levels": [
+      "Respeito até placa de proibido pisar na grama",
+      "Quebro uma regra pequena se não prejudicar ninguém",
+      "Às vezes prefiro pedir desculpas a pedir permissão",
+      "Se uma regra me atrapalha, procuro um jeito de contornar",
+      "Se eu fosse presidente, meu primeiro decreto seria me dar imunidade"
+    ]
+  },
+  {
+    "title": "Facilidade para Se Apaixonar",
+    "levels": [
+      "Meu coração tem autenticação em duas etapas",
+      "Preciso conhecer alguém por muito tempo",
+      "Algumas conversas boas já despertam interesse",
+      "Me apaixono depois de um encontro perfeito",
+      "Se o atendente sorrir para mim, já imagino nossa lua de mel"
+    ]
+  },
+  {
+    "title": "Nível de Vaidade",
+    "levels": [
+      "Uso a primeira roupa limpa que encontrar",
+      "Me arrumo um pouco quando vou sair",
+      "Gosto de cuidar da aparência e combinar roupas",
+      "Não saio de casa sem conferir cada detalhe no espelho",
+      "Se meu reflexo pudesse me seguir, eu namoraria comigo mesmo"
+    ]
+  },
+  {
+    "title": "Coragem para Mandar Mensagem Bêbado",
+    "levels": [
+      "Desligo o celular antes do primeiro gole",
+      "Até penso em mandar, mas desisto",
+      "Mando umas mensagens e me arrependo no dia seguinte",
+      "Já fiz declarações que só descobri ao acordar",
+      "Meu WhatsApp bêbado deveria exigir autorização judicial"
+    ]
+  },
+  {
+    "title": "Disposição para Passar Perrengue",
+    "levels": [
+      "Se não tiver conforto, nem saio de casa",
+      "Aceito pequenos imprevistos sem reclamar muito",
+      "Encaro situações difíceis se valer a experiência",
+      "Durmo no chão e tomo banho gelado sem drama",
+      "Se me largarem no deserto com uma mochila, volto contando que foi férias"
+    ]
+  },
+  {
+    "title": "Nível de Inveja",
+    "levels": [
+      "Comemoro até a vitória de quem não gosto",
+      "Às vezes me comparo, mas fico feliz pelos outros",
+      "Uma pontinha de inveja aparece de vez em quando",
+      "Se alguém conquista algo, começo a questionar minhas escolhas",
+      "Se meu vizinho comprar uma Ferrari, financio um foguete"
+    ]
+  },
+  {
+    "title": "Capacidade de Resistir a Tentações",
+    "levels": [
+      "Não consigo resistir nem a um chocolate na geladeira",
+      "Se insistirem um pouco, acabo cedendo",
+      "Depende da tentação e do momento",
+      "Consigo dizer não mesmo quando quero muito",
+      "Se o diabo me oferecer um contrato, devolvo com correções gramaticais"
+    ]
   }
+];
+const COLORS=['#ffca66','#74d8bb','#f48eac','#8db9ff','#d6a4ff','#ff9d72','#b7df76','#7cd8ed','#efb4d4','#b4a1ff'];
+const ROOM='salas/sala-principal',MAX=10,WIDTH={1:25,2:15,3:10};
+const $=id=>document.getElementById(id),rand=()=>Math.random().toString(36).slice(2)+Date.now().toString(36),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+let db,auth,uid='',mine='',epoch='',room={},chosen=0,busy=false,localLine=50,localGuess=50,localPoints=1,dragging='',seenRound='',unsub=null;
+const players=()=>Object.entries(room.players||{}).filter(([k,p])=>p&&p.name).sort((a,b)=>a[1].position-b[1].position);
+const ordered=()=>players().map(([k])=>k),active=()=>ordered().includes(mine),round=()=>room.game||null;
+function msg(s){for(const id of ['entryMsg','lobbyMsg','gameMsg'])$(id).textContent=s||'';}
+function color(pos){return COLORS[(pos-1)%COLORS.length]}
+function show(id){for(const x of ['entry','lobby','game'])$(x).classList.toggle('hide',x!==id)}
+function drawPositions(){const taken=new Set(players().map(([k,p])=>p.position));$('positions').replaceChildren();for(let i=1;i<=MAX;i++){const b=document.createElement('button');b.textContent=i;b.className=i===chosen?'active':'';b.disabled=taken.has(i)||busy;b.onclick=()=>{chosen=i;drawPositions()};$('positions').append(b)}}
+function drawPeople(id,score=false){const host=$(id);host.replaceChildren();for(const [key,p] of players()){const el=document.createElement('div');el.className='player';const dot=document.createElement('span');dot.className='dot';dot.style.background=color(p.position);const name=document.createElement('span');name.textContent=`${p.position}. ${p.name}${key===mine?' (você)':''}`;el.append(dot,name);if(score){const s=document.createElement('span');s.className='score';s.textContent=(room.scores?.[key]||0)+' pts';el.append(s)}host.append(el)}}
+function drawRuler(){const r=$('ruler');r.replaceChildren();for(let i=0;i<=10;i++){const t=document.createElement('div');t.className='tick'+(i%2===0?' major':'');if(i%2===0){const n=document.createElement('span');n.textContent=i/2+1;t.append(n)}r.append(t)}}
+function freshGame(ids){const deck=Array.from({length:50},(_,i)=>i);for(let i=deck.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}return {stage:'line',round:1,host:ids[0],deck,deckIndex:0,theme:deck[0],line:null,guesses:{},revealed:false,finished:false,winIds:[],tie:false}}
+function nextHost(ids,current){const ix=ids.indexOf(current);return ids[(ix+1+ids.length)%ids.length]}
+function nextGuesser(g){return ordered().filter(k=>k!==g.host&&!g.guesses?.[k])[0]||null}
+function guessBounds(value,points){const w=WIDTH[points];return {left:clamp(value-w/2,0,100-w),width:w}}
+function scoreHit(line,guess){const b=guessBounds(guess.value,guess.points);return line>=b.left-0.00001&&line<=b.left+b.width+0.00001}
+function drawGame(){const g=round();if(!g)return;const ids=ordered();const host=room.players?.[g.host];const myHost=mine===g.host;const current=g.stage==='guess'?nextGuesser(g):null;const myTurn=g.stage==='line'?myHost:g.stage==='guess'&&current===mine;const topic=THEMES[g.theme]||THEMES[0];$('round').textContent=`Rodada ${g.round}`;$('stage').textContent={line:'Linha secreta',guess:'Palpites',reveal:'Revelação',end:'Fim de jogo'}[g.stage]||g.stage;drawPeople('scoreboard',true);$('topicTitle').textContent=topic.title;$('levels').replaceChildren();topic.levels.forEach((txt,i)=>{const d=document.createElement('div');d.className='level';const b=document.createElement('b');b.textContent=i+1;const t=document.createElement('span');t.textContent=txt;d.append(b,t);$('levels').append(d)});
+if(seenRound!==`${epoch}-${g.round}`){seenRound=`${epoch}-${g.round}`;localLine=50;localGuess=50;localPoints=1}
+const board=$('board');board.classList.toggle('revealed',g.stage==='reveal'||g.stage==='end');const secret=$('secret');secret.classList.toggle('hide',g.stage!=='reveal'&&g.stage!=='end'&&!(myHost&&g.stage==='line'));secret.style.left=`${g.stage==='line'?localLine:g.line??50}%`;
+const hostText=host?.name||'Jogador desconectado';let info='';if(g.stage==='line')info=myHost?'Arraste a linha vermelha no quadro branco e confirme. Sua posição ficará oculta para os demais.':`${hostText} está escolhendo sua posição secreta.`;if(g.stage==='guess')info=current===mine?'Sua vez! Escolha a ficha, arraste-a e confirme.':'Vez de '+(room.players?.[current]?.name||'jogador')+'. Palpites confirmados aparecem para todos.';if(g.stage==='reveal')info='A placa subiu! Confira quem acertou a linha.';if(g.stage==='end')info=g.tie?'Empate na liderança: seguimos para o desempate.':'Partida encerrada!';$('turnInfo').textContent=info;
+$('curtain').classList.toggle('hide',g.stage==='line'&&myHost);$('choicesArea').classList.toggle('hide',!(g.stage==='guess'&&current===mine));document.querySelectorAll('.choice').forEach(b=>b.classList.toggle('selected',Number(b.dataset.points)===localPoints));
+const tokens=$('tokens');tokens.replaceChildren();for(const [key,p] of players()){const saved=g.guesses?.[key];const provisional=g.stage==='guess'&&current===mine&&key===mine&&!saved;const guess=saved||(provisional?{points:localPoints,value:localGuess}:null);if(!guess)continue;const b=guessBounds(guess.value,guess.points);const el=document.createElement('div');el.className='token'+(provisional?' mine':'');el.style.left=b.left+'%';el.style.width=b.width+'%';el.style.bottom=((p.position-1)*10+1)+'%';el.style.background=color(p.position);el.textContent=guess.points;el.title=`${p.name}: ${guess.points} ponto(s)`;if(provisional){el.addEventListener('pointerdown',e=>{dragging='guess';el.setPointerCapture(e.pointerId);e.preventDefault()});el.addEventListener('pointermove',e=>{if(dragging==='guess')setFromPointer(e,'guess')});el.addEventListener('pointerup',()=>dragging='')}tokens.append(el)}
+const action=$('action'),next=$('next');action.classList.toggle('hide',!myTurn);next.classList.toggle('hide',!(g.stage==='reveal'||g.stage==='end'));if(g.stage==='line')action.textContent='Confirmar linha secreta';else if(g.stage==='guess')action.textContent=`Confirmar ficha de ${localPoints} ponto(s)`;next.textContent=g.stage==='end'&&!g.tie?'Nova partida':'Próxima rodada';next.disabled=!(g.stage==='reveal'||g.stage==='end')||!(mine===g.host||!ids.includes(g.host));
+const result=$('results');result.classList.toggle('hide',!(g.stage==='reveal'||g.stage==='end'));if(!result.classList.contains('hide')){result.replaceChildren();const h=document.createElement('h2');h.textContent=g.stage==='end'&&!g.tie?'🏆 Resultado final':g.tie?'⚖️ Desempate':'Resultado da rodada';result.append(h);for(const [key,p] of players()){if(key===g.host)continue;const guess=g.guesses?.[key];const d=document.createElement('div');d.className='result';d.textContent=`${p.name}: ${guess?(scoreHit(g.line,guess)?'✓ +'+guess.points+' ponto(s)':'✕ 0 pontos'):'Sem palpite'} · Total: ${room.scores?.[key]||0}`;result.append(d)}if(g.winIds?.length){const w=document.createElement('p');w.textContent='Vencedor(es): '+g.winIds.map(k=>room.players?.[k]?.name||'Jogador').join(', ');result.append(w)}}
 }
-function showLobby(on){$('entry').classList.toggle('hidden',on);$('lobby').classList.toggle('hidden',!on);}
-function renderRoom(data){
-  roomData=data||{};
-  renderPositions();
-  if(session&&roomData.epoch!==session){session=null;playerKey=null;showLobby(false);notice('A sala foi reiniciada. Escolha sua posição para entrar novamente.');}
-  const players=Object.entries(roomData.players||{}).sort((a,b)=>a[1].position-b[1].position);
-  $('players').replaceChildren();
-  for(const [key,p] of players){
-    const item=document.createElement('div');item.className='player';
-    const n=document.createElement('span');n.className='number';n.textContent=p.position;
-    const name=document.createElement('span');name.textContent=p.name||'Jogador';
-    item.append(n,name);
-    if(key===playerKey){const me=document.createElement('span');me.className='me';me.textContent='Você';item.append(me);}
-    $('players').append(item);
-  }
-  $('count').textContent=`${players.length} de ${MAX_PLAYERS} posições ocupadas`;
-}
-async function ensureAuth(){if(!uid)throw Error('Aguarde a conexão com o Firebase.');}
-async function join(){
-  if(busy)return;
-  const name=$('name').value.trim();
-  if(!name||!chosen){notice('Digite seu nome e escolha uma posição.');return;}
-  try{
-    setBusy(true);notice('');await ensureAuth();
-    // Cada entrada usa uma chave aleatória, permitindo múltiplas abas e aparelhos.
-    const key=token().replaceAll('.','_').replaceAll('#','_').replaceAll('$','_').replaceAll('/','_').replaceAll('[','_').replaceAll(']','_');
-    const roomRef=ref(db,ROOM);
-    const result=await runTransaction(roomRef,old=>{
-      old=old||{};
-      if(!old.epoch)old.epoch=token();
-      old.players=old.players||{};
-      if(Object.values(old.players).some(p=>Number(p.position)===chosen))return;
-      if(Object.keys(old.players).length>=MAX_PLAYERS)return;
-      old.players[key]={name,position:chosen,uid,joinedAt:Date.now()};
-      return old;
-    },{applyLocally:false});
-    if(!result.committed){notice('Posição ocupada ou sala cheia. Escolha outra.');return;}
-    session=result.snapshot.val().epoch;playerKey=key;
-    const myRef=ref(db,`${ROOM}/players/${key}`);
-    // Presença: excluir o jogador quando sua conexão cair.
-    await onDisconnect(myRef).remove();
-    // Verifica se um reset ocorreu durante a configuração de presença.
-    const current=await get(ref(db,ROOM));
-    if(current.val()?.epoch!==session||!current.val()?.players?.[key]){
-      await onDisconnect(myRef).cancel();session=null;playerKey=null;
-      notice('A sala mudou durante a conexão. Tente novamente.');return;
-    }
-    showLobby(true);notice('',true);
-  }catch(e){notice(`Não foi possível conectar: ${e.message}`);}
-  finally{setBusy(false);renderPositions();}
-}
-async function leave(){
-  if(busy)return;setBusy(true);
-  try{if(playerKey){const myRef=ref(db,`${ROOM}/players/${playerKey}`);await remove(myRef);await onDisconnect(myRef).cancel();}session=null;playerKey=null;showLobby(false);notice('Você saiu da sala.');}
-  catch(e){notice(e.message,true);}finally{setBusy(false);}
-}
-async function reset(){
-  if(busy)return;
-  if(!confirm('Reiniciar a sala para TODOS os jogadores? Todos precisarão entrar novamente.'))return;
-  setBusy(true);
-  try{
-    await ensureAuth();
-    // Nova geração da sala: descarta participantes antigos e invalida sessões.
-    await runTransaction(ref(db,ROOM),()=>({epoch:token(),players:{},resetAt:Date.now()}),{applyLocally:false});
-    if(playerKey)await onDisconnect(ref(db,`${ROOM}/players/${playerKey}`)).cancel();
-    session=null;playerKey=null;chosen=null;showLobby(false);notice('Sala reiniciada! Agora todos podem entrar novamente.');
-  }catch(e){notice(`Falha ao reiniciar: ${e.message}`,!$('lobby').classList.contains('hidden'));}
-  finally{setBusy(false);renderPositions();}
-}
-$('join').onclick=join;$('leave').onclick=leave;$('resetEntry').onclick=reset;$('resetLobby').onclick=reset;
-$('name').addEventListener('keydown',e=>{if(e.key==='Enter')join();});
-renderPositions();
-try{
-  if(firebaseConfig.apiKey.startsWith('COLE_'))throw Error('Configure as credenciais do Firebase no arquivo HTML.');
-  const app=initializeApp(firebaseConfig);db=getDatabase(app);auth=getAuth(app);
-  await signInAnonymously(auth);uid=auth.currentUser?.uid;
-  onValue(ref(db,ROOM),snap=>renderRoom(snap.val()),e=>notice('Erro ao acompanhar sala: '+e.message,!$('lobby').classList.contains('hidden')));
-  onValue(ref(db,'.info/connected'),snap=>{
-    connected=!!snap.val();$('connectionStatus').textContent=connected?'● Conectado':'● Sem conexão';
-    $('connectionStatus').style.color=connected?'#a8f0c4':'#ffb3b3';
-    // Se a conexão cair e voltar, a sessão anterior é encerrada para evitar jogador fantasma.
-    if(!connected&&playerKey){session=null;playerKey=null;showLobby(false);notice('Conexão perdida. Entre novamente quando a internet voltar.');}
-  });
-}catch(e){notice(e.message);$('join').disabled=true;}
-</script>
-</body>
-</html>
+function render(){drawPositions();if(!mine){show('entry');return}if(!room.players?.[mine]||room.epoch!==epoch){mine='';epoch='';sessionStorage.removeItem('entrelinhaSession');show('entry');msg('A sala foi reiniciada ou sua conexão anterior expirou. Entre novamente.');return}if(!room.game){show('lobby');drawPeople('lobbyPlayers');$('start').disabled=players().length<2||mine!==ordered()[0];return}show('game');drawGame()}
+async function transact(update){if(!db)throw Error('Firebase não conectado.');const r=await runTransaction(ref(db,ROOM),old=>{if(!old||old.epoch!==epoch||!old.players?.[mine])return;return update(old)}, {applyLocally:false});if(!r.committed)throw Error('A sala mudou ou a ação não está mais disponível.');return r.snapshot.val()}
+async function join(){if(busy)return;const name=$('name').value.trim();if(!name||!chosen)return msg('Informe seu nome e escolha uma posição.');busy=true;$('join').disabled=true;try{if(!uid)throw Error('Aguarde a autenticação.');const key=rand();const r=await runTransaction(ref(db,ROOM),old=>{old=old||{};if(!old.epoch)old.epoch=rand();if(old.game)return;old.players=old.players||{};if(Object.values(old.players).some(p=>p.position===chosen))return;old.players[key]={name,position:chosen,uid};old.scores=old.scores||{};old.scores[key]=0;return old},{applyLocally:false});if(!r.committed)throw Error('Posição ocupada ou partida já iniciada.');mine=key;epoch=r.snapshot.val().epoch;sessionStorage.setItem('entrelinhaSession',JSON.stringify({mine,epoch}));await onDisconnect(ref(db,`${ROOM}/players/${mine}`)).remove();msg('');render()}catch(e){msg(e.message)}finally{busy=false;$('join').disabled=false}}
+async function reset(){if(!confirm('Reiniciar a sala para TODOS? A partida e os pontos serão apagados.'))return;try{if(!uid)throw Error('Firebase não conectado');await runTransaction(ref(db,ROOM),()=>({epoch:rand(),players:{},scores:{}}),{applyLocally:false});mine='';epoch='';sessionStorage.removeItem('entrelinhaSession');show('entry');msg('Sala reiniciada.')}catch(e){msg(e.message)}}
+async function leave(){try{if(mine)await remove(ref(db,`${ROOM}/players/${mine}`))}catch(e){}mine='';epoch='';sessionStorage.removeItem('entrelinhaSession');show('entry')}
+async function start(){try{await transact(old=>{if(old.game)return;const ids=Object.entries(old.players||{}).sort((a,b)=>a[1].position-b[1].position).map(([k])=>k);if(ids.length<2||ids[0]!==mine)return;old.game=freshGame(ids);return old})}catch(e){msg(e.message)}}
+async function confirmAction(){const g=round();if(!g)return;try{if(g.stage==='line'){await transact(old=>{const a=old.game;if(a.stage!=='line'||a.host!==mine)return;a.line=Number(localLine.toFixed(3));a.stage='guess';return old})}else if(g.stage==='guess'){await transact(old=>{const a=old.game;if(a.stage!=='guess'||nextGuesserFrom(old)!==mine)return;a.guesses=a.guesses||{};a.guesses[mine]={points:localPoints,value:Number(localGuess.toFixed(3))};const ids=Object.keys(old.players||{}).filter(k=>k!==a.host);if(ids.every(k=>a.guesses[k])){a.stage='reveal';a.revealed=true;for(const [k,guess] of Object.entries(a.guesses)){if(scoreHit(a.line,guess))old.scores[k]=(old.scores[k]||0)+guess.points}const max=Math.max(...Object.values(old.scores||{}));const winners=Object.keys(old.scores||{}).filter(k=>old.players?.[k]&&old.scores[k]===max);if(max>=20){a.stage='end';a.winIds=winners;a.tie=winners.length>1}}return old})}}catch(e){msg(e.message)}}
+function nextGuesserFrom(old){const a=old.game;return Object.entries(old.players||{}).sort((x,y)=>x[1].position-y[1].position).map(([k])=>k).find(k=>k!==a.host&&!a.guesses?.[k])||null}
+async function advance(){try{await transact(old=>{const a=old.game;if(!['reveal','end'].includes(a.stage))return;if(mine!==a.host&&old.players?.[a.host])return;const ids=Object.entries(old.players||{}).sort((x,y)=>x[1].position-y[1].position).map(([k])=>k);if(ids.length<2)return;if(a.stage==='end'&&!a.tie){old.scores=Object.fromEntries(ids.map(k=>[k,0]));old.game=freshGame(ids);return old}let nextIndex=a.deckIndex+1;if(nextIndex>=a.deck.length){a.deck=Array.from({length:50},(_,i)=>i).sort(()=>Math.random()-.5);nextIndex=0}a.deckIndex=nextIndex;a.theme=a.deck[nextIndex];a.host=nextHost(ids,a.host);a.round++;a.stage='line';a.line=null;a.guesses={};a.winIds=[];a.tie=false;return old})}catch(e){msg(e.message)}}
+function setFromPointer(e,type){const r=$('board').getBoundingClientRect();const x=clamp((e.clientX-r.left)/r.width*100,0,100);if(type==='line')localLine=x;else localGuess=clamp(x,WIDTH[localPoints]/2,100-WIDTH[localPoints]/2);drawGame()}
+$('board').addEventListener('pointerdown',e=>{const g=round();if(!g)return;if(g.stage==='line'&&mine===g.host){dragging='line';$('board').setPointerCapture(e.pointerId);setFromPointer(e,'line')}else if(g.stage==='guess'&&nextGuesser(g)===mine){dragging='guess';$('board').setPointerCapture(e.pointerId);setFromPointer(e,'guess')}});
+$('board').addEventListener('pointermove',e=>{if(dragging)setFromPointer(e,dragging)});$('board').addEventListener('pointerup',()=>dragging='');$('board').addEventListener('pointercancel',()=>dragging='');
+document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{localPoints=Number(b.dataset.points);localGuess=clamp(localGuess,WIDTH[localPoints]/2,100-WIDTH[localPoints]/2);drawGame()});
+$('join').onclick=join;$('resetEntry').onclick=reset;$('resetLobby').onclick=reset;$('restart').onclick=reset;$('leave').onclick=leave;$('start').onclick=start;$('action').onclick=confirmAction;$('next').onclick=advance;drawRuler();drawPositions();
+(async()=>{try{if(Object.values(firebaseConfig).some(v=>String(v).startsWith('COLE_')))throw Error('Configure firebaseConfig no HTML antes de publicar.');const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getDatabase(app);const credential=await signInAnonymously(auth);uid=credential.user.uid;$('connection').textContent='● Conectado';const saved=JSON.parse(sessionStorage.getItem('entrelinhaSession')||'null');if(saved){mine=saved.mine;epoch=saved.epoch}unsub=onValue(ref(db,ROOM),snap=>{room=snap.val()||{};render()},e=>{msg('Erro ao ler a sala: '+e.message);$('connection').textContent='● Erro'});}catch(e){$('connection').textContent='● Erro';msg(e.message)}})();
+</script></body></html>
