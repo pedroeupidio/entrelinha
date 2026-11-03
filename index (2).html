@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Novo Jogo • Sala</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f5ff;background:#151425}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:20px}.panel{width:min(100%,460px);background:#222039;border:1px solid #393552;border-radius:24px;padding:26px;box-shadow:0 22px 65px #08071166}h1{font-size:27px;margin:0 0 8px;text-align:center}p{color:#bbb6d1;text-align:center;margin:0 0 25px;font-size:14px}label{display:block;font-size:13px;font-weight:700;margin:17px 0 9px}input{width:100%;background:#302d48;color:white;border:1px solid #48435e;border-radius:12px;padding:14px;font-size:16px;outline:none}input:focus{border-color:#a38cff}.positions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.pos{border:1px solid #4b4566;border-radius:12px;background:#302d48;color:white;padding:13px 0;font-size:17px;cursor:pointer}.pos.selected{background:#8268ed;border-color:#b2a1ff}.pos:disabled{opacity:.32;cursor:not-allowed}.primary,.secondary{width:100%;border:0;border-radius:12px;padding:15px;margin-top:20px;font-weight:700;font-size:15px;cursor:pointer}.primary{background:#8268ed;color:white}.secondary{background:transparent;border:1px solid #514b69;color:#c9c3dd;margin-top:12px}.primary:disabled{opacity:.5;cursor:not-allowed}.notice{min-height:20px;color:#ffb3b3;text-align:center;font-size:13px;margin-top:14px}.hidden{display:none}.players{display:grid;gap:9px;margin-top:18px}.player{display:flex;align-items:center;gap:12px;background:#302d48;padding:12px;border-radius:12px}.number{display:grid;place-items:center;background:#8065df;border-radius:10px;width:36px;height:36px;font-weight:800}.me{margin-left:auto;color:#c1b1ff;font-size:12px}.status{font-size:13px;color:#a8f0c4;text-align:center}.muted{color:#b9b2d0;font-size:12px;text-align:center;margin-top:16px}.row{display:flex;gap:10px}.row button{flex:1}.danger{color:#ffb9bf}.spinner{opacity:.6}
+</style>
+</head>
+<body>
+<main class="panel">
+<section id="entry">
+<h1>🎲 Novo jogo</h1><p>Escolha seu lugar e entre na sala.</p>
+<label for="name">Seu nome</label><input id="name" maxlength="24" placeholder="Como devemos te chamar?" autocomplete="nickname">
+<label>Sua posição na mesa</label><div class="positions" id="positions"></div>
+<button class="primary" id="join">Conectar à sala</button>
+<button class="secondary danger" id="resetEntry">↻ Reiniciar sala</button>
+<div class="notice" id="entryNotice" role="status"></div>
+</section>
+<section id="lobby" class="hidden">
+<h1>✨ Sala de espera</h1><p>Todos conectados aparecem aqui automaticamente.</p>
+<div class="status" id="connectionStatus">● Conectado</div><div class="players" id="players"></div>
+<div class="muted" id="count"></div>
+<button class="secondary" id="leave">Sair da sala</button>
+<button class="secondary danger" id="resetLobby">↻ Reiniciar sala</button>
+<div class="notice" id="lobbyNotice" role="status"></div>
+</section>
+</main>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+import {getAuth,signInAnonymously,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import {getDatabase,ref,onValue,runTransaction,onDisconnect,remove,get,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
+
+
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAndJSnUDDiDoo19zLXFK-esNa9ZNOBTXM",
+    authDomain: "entrelinha-b2f67.firebaseapp.com",
+    projectId: "entrelinha-b2f67",
+    storageBucket: "entrelinha-b2f67.firebasestorage.app",
+    messagingSenderId: "516751278185",
+    appId: "1:516751278185:web:bb35c9f21b4e0cdc5a22f8"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+
+const MAX_PLAYERS=12;
+const ROOM='salas/sala-principal';
+const $=id=>document.getElementById(id);
+let db,auth,uid=null,chosen=null,session=null,playerKey=null,connected=false,busy=false,roomData=null;
+const token=()=>crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+const notice=(message,lobby=false)=>$(lobby?'lobbyNotice':'entryNotice').textContent=message;
+const setBusy=v=>{busy=v;$('join').disabled=v;$('resetEntry').disabled=v;$('resetLobby').disabled=v;$('leave').disabled=v;};
+function renderPositions(){
+  const occupied=new Set(Object.values(roomData?.players||{}).map(p=>Number(p.position)));
+  $('positions').replaceChildren();
+  for(let i=1;i<=MAX_PLAYERS;i++){
+    const b=document.createElement('button');b.type='button';b.className='pos'+(chosen===i?' selected':'');b.textContent=i;
+    b.disabled=busy||occupied.has(i)&&!(session===roomData?.epoch&&playerKey&&roomData?.players?.[playerKey]?.position===i);
+    b.onclick=()=>{chosen=i;renderPositions();};$('positions').append(b);
+  }
+}
+function showLobby(on){$('entry').classList.toggle('hidden',on);$('lobby').classList.toggle('hidden',!on);}
+function renderRoom(data){
+  roomData=data||{};
+  renderPositions();
+  if(session&&roomData.epoch!==session){session=null;playerKey=null;showLobby(false);notice('A sala foi reiniciada. Escolha sua posição para entrar novamente.');}
+  const players=Object.entries(roomData.players||{}).sort((a,b)=>a[1].position-b[1].position);
+  $('players').replaceChildren();
+  for(const [key,p] of players){
+    const item=document.createElement('div');item.className='player';
+    const n=document.createElement('span');n.className='number';n.textContent=p.position;
+    const name=document.createElement('span');name.textContent=p.name||'Jogador';
+    item.append(n,name);
+    if(key===playerKey){const me=document.createElement('span');me.className='me';me.textContent='Você';item.append(me);}
+    $('players').append(item);
+  }
+  $('count').textContent=`${players.length} de ${MAX_PLAYERS} posições ocupadas`;
+}
+async function ensureAuth(){if(!uid)throw Error('Aguarde a conexão com o Firebase.');}
+async function join(){
+  if(busy)return;
+  const name=$('name').value.trim();
+  if(!name||!chosen){notice('Digite seu nome e escolha uma posição.');return;}
+  try{
+    setBusy(true);notice('');await ensureAuth();
+    // Cada entrada usa uma chave aleatória, permitindo múltiplas abas e aparelhos.
+    const key=token().replaceAll('.','_').replaceAll('#','_').replaceAll('$','_').replaceAll('/','_').replaceAll('[','_').replaceAll(']','_');
+    const roomRef=ref(db,ROOM);
+    const result=await runTransaction(roomRef,old=>{
+      old=old||{};
+      if(!old.epoch)old.epoch=token();
+      old.players=old.players||{};
+      if(Object.values(old.players).some(p=>Number(p.position)===chosen))return;
+      if(Object.keys(old.players).length>=MAX_PLAYERS)return;
+      old.players[key]={name,position:chosen,uid,joinedAt:Date.now()};
+      return old;
+    },{applyLocally:false});
+    if(!result.committed){notice('Posição ocupada ou sala cheia. Escolha outra.');return;}
+    session=result.snapshot.val().epoch;playerKey=key;
+    const myRef=ref(db,`${ROOM}/players/${key}`);
+    // Presença: excluir o jogador quando sua conexão cair.
+    await onDisconnect(myRef).remove();
+    // Verifica se um reset ocorreu durante a configuração de presença.
+    const current=await get(ref(db,ROOM));
+    if(current.val()?.epoch!==session||!current.val()?.players?.[key]){
+      await onDisconnect(myRef).cancel();session=null;playerKey=null;
+      notice('A sala mudou durante a conexão. Tente novamente.');return;
+    }
+    showLobby(true);notice('',true);
+  }catch(e){notice(`Não foi possível conectar: ${e.message}`);}
+  finally{setBusy(false);renderPositions();}
+}
+async function leave(){
+  if(busy)return;setBusy(true);
+  try{if(playerKey){const myRef=ref(db,`${ROOM}/players/${playerKey}`);await remove(myRef);await onDisconnect(myRef).cancel();}session=null;playerKey=null;showLobby(false);notice('Você saiu da sala.');}
+  catch(e){notice(e.message,true);}finally{setBusy(false);}
+}
+async function reset(){
+  if(busy)return;
+  if(!confirm('Reiniciar a sala para TODOS os jogadores? Todos precisarão entrar novamente.'))return;
+  setBusy(true);
+  try{
+    await ensureAuth();
+    // Nova geração da sala: descarta participantes antigos e invalida sessões.
+    await runTransaction(ref(db,ROOM),()=>({epoch:token(),players:{},resetAt:Date.now()}),{applyLocally:false});
+    if(playerKey)await onDisconnect(ref(db,`${ROOM}/players/${playerKey}`)).cancel();
+    session=null;playerKey=null;chosen=null;showLobby(false);notice('Sala reiniciada! Agora todos podem entrar novamente.');
+  }catch(e){notice(`Falha ao reiniciar: ${e.message}`,!$('lobby').classList.contains('hidden'));}
+  finally{setBusy(false);renderPositions();}
+}
+$('join').onclick=join;$('leave').onclick=leave;$('resetEntry').onclick=reset;$('resetLobby').onclick=reset;
+$('name').addEventListener('keydown',e=>{if(e.key==='Enter')join();});
+renderPositions();
+try{
+  if(firebaseConfig.apiKey.startsWith('COLE_'))throw Error('Configure as credenciais do Firebase no arquivo HTML.');
+  const app=initializeApp(firebaseConfig);db=getDatabase(app);auth=getAuth(app);
+  await signInAnonymously(auth);uid=auth.currentUser?.uid;
+  onValue(ref(db,ROOM),snap=>renderRoom(snap.val()),e=>notice('Erro ao acompanhar sala: '+e.message,!$('lobby').classList.contains('hidden')));
+  onValue(ref(db,'.info/connected'),snap=>{
+    connected=!!snap.val();$('connectionStatus').textContent=connected?'● Conectado':'● Sem conexão';
+    $('connectionStatus').style.color=connected?'#a8f0c4':'#ffb3b3';
+    // Se a conexão cair e voltar, a sessão anterior é encerrada para evitar jogador fantasma.
+    if(!connected&&playerKey){session=null;playerKey=null;showLobby(false);notice('Conexão perdida. Entre novamente quando a internet voltar.');}
+  });
+}catch(e){notice(e.message);$('join').disabled=true;}
+</script>
+</body>
+</html>
